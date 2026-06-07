@@ -1,0 +1,199 @@
+/* 宋式美学设计系统 - Song Dynasty Aesthetics */
+
+:root {
+  /* 水墨色系 - Ink Wash Colors */
+  --ink-black: #2c2c2c;
+  --ink-dark: #4a4a4a;
+  --ink-medium: #757575;
+  --ink-light: #a8a8a8;
+  --ink-pale: #d4d4d4;
+
+  /* 纸张色系 - Paper Colors */
+  --paper-white: #fafaf9;
+  --paper-cream: #f5f5f4;
+  --paper-beige: #e7e5e4;
+
+  /* 自然色调 - Natural Accents */
+  --bamboo-green: #7c9885;
+  --plum-pink: #d4a5a5;
+  --lotus-blue: #8fa5b8;
+  --tea-brown: #a67c52;
+
+  /* 间距系统 - Spacing System */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+
+  /* 阴影 - Shadows */
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* 全局字体设置 */
+body {
+  font-family: "Source Han Serif CN", "Noto Serif SC", serif;
+  color: var(--ink-black);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+
+/* 标题字体 */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Source Han Serif CN", "Noto Serif SC", serif;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: var(--ink-black);
+}
+
+/* 宋式卡片 */
+.song-card {
+  background: var(--paper-white);
+  border: 1px solid var(--ink-pale);
+  border-radius: 0.25rem;
+  box-shadow: var(--shadow-subtle);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.song-card:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+
+/* 宋式按钮 */
+.song-button {
+  background: transparent;
+  border: 1px solid var(--ink-dark);
+  color: var(--ink-dark);
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.125rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.song-button:hover {
+  background: var(--ink-dark);
+  color: var(--paper-white);
+}
+
+.song-button-primary {
+  background: var(--ink-dark);
+  color: var(--paper-white);
+}
+
+.song-button-primary:hover {
+  background: var(--ink-black);
+}
+
+/* 宋式分割线 */
+.song-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--ink-pale), transparent);
+  margin: var(--space-lg) 0;
+}
+
+/* 宋式标签 */
+.song-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--ink-pale);
+  border-radius: 0.125rem;
+  font-size: 0.75rem;
+  color: var(--ink-medium);
+  letter-spacing: 0.05em;
+  background: transparent;
+}
+
+/* 水墨渐变效果 */
+.ink-gradient {
+  background: linear-gradient(180deg, var(--paper-white) 0%, var(--paper-cream) 100%);
+}
+
+/* 留白容器 */
+.song-container {
+  padding: var(--space-xl);
+  max-width: 100%;
+}
+
+/* 优雅过渡 */
+.song-transition {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 细线边框 */
+.song-border {
+  border: 0.5px solid var(--ink-pale);
+}
+
+/* 文字装饰 */
+.song-text-accent {
+  position: relative;
+  display: inline-block;
+}
+
+.song-text-accent::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--ink-light);
+}
+
+/* 印章效果 */
+.song-seal {
+  display: inline-block;
+  padding: 0.5rem;
+  border: 2px solid var(--plum-pink);
+  color: var(--plum-pink);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+/* 圆形装饰 */
+.song-circle {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 1px solid var(--ink-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-white);
+}
+
+/* 数据展示 */
+.song-metric {
+  text-align: center;
+  padding: var(--space-lg);
+}
+
+.song-metric-value {
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--ink-black);
+  line-height: 1.2;
+}
+
+.song-metric-label {
+  font-size: 0.875rem;
+  color: var(--ink-medium);
+  letter-spacing: 0.1em;
+  margin-top: var(--space-sm);
+}
+
+/* 细节装饰线 */
+.song-accent-line {
+  width: 2rem;
+  height: 1px;
+  background: var(--ink-dark);
+  margin: var(--space-md) auto;
+}
