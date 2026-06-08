@@ -3,7 +3,7 @@ import { Card, CardContent, TextField, Button, MenuItem, Avatar } from '@mui/mat
 import { User, Edit3 } from 'lucide-react';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { db, signInWithGoogle } from '../../firebase'; // 恢复真实的 Firebase 导入
+import { db, signInWithGoogle } from '../../firebase'; 
 
 export interface UserProfile {
   name: string;
@@ -42,7 +42,6 @@ export function Profile() {
   const [tempProfile, setTempProfile] = useState<UserProfile>(DEMO_DATA);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // 恢复：监听真实的 Firebase 登录状态
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -57,7 +56,6 @@ export function Profile() {
           setTempProfile(cloudData);
           localStorage.setItem('userProfile', JSON.stringify(cloudData));
         } else {
-          // 如果是第一次登录的全新用户
           const initData = { ...DEMO_DATA, name: user.displayName || '新用户', avatar: user.photoURL || '' };
           setProfile(initData);
           setTempProfile(initData);
@@ -72,12 +70,11 @@ export function Profile() {
     return () => unsubscribe();
   }, []);
 
-  // 恢复：真实的谷歌弹窗登录
   const handleLogin = async () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      alert("登录被取消或遇到网络问题，请重试");
+      alert("登录遇到问题，请重试");
     }
   };
 
@@ -104,7 +101,6 @@ export function Profile() {
     localStorage.setItem('userProfile', JSON.stringify(tempProfile)); 
     setIsEditing(false);
 
-    // 同步到云端 Firestore
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       await setDoc(userRef, { ...tempProfile }, { merge: true });
@@ -117,10 +113,8 @@ export function Profile() {
   const bmiStatus = parseFloat(bmi) < 18.5 ? '偏瘦' : parseFloat(bmi) < 24 ? '正常' : parseFloat(bmi) < 28 ? '偏胖' : '肥胖';
 
   return (
-    // 修复排版：增加 pt-8 顶部内边距，增加 space-y-6 拉开组件间距
     <div className="h-full overflow-y-auto bg-[#fafaf9] p-6 pt-8 pb-20 space-y-6">
       
-      {/* 修复排版：加回页面大标题，稳住视觉重心 */}
       <h1 className="text-2xl font-serif text-center text-[#2c2c2c] tracking-widest mb-6">个人档案</h1>
 
       <div className="mb-4">
@@ -137,7 +131,7 @@ export function Profile() {
 
       <Card sx={{ bgcolor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '0.5px solid #e7e5e4' }}>
         <CardContent className="p-6">
-          <div className="flex items-center gap-4 mb-6"> {/* 加大下边距 */}
+          <div className="flex items-center gap-4 mb-6"> 
             <Avatar sx={{ width: 64, height: 64, border: '1px solid #e7e5e4', bgcolor: currentUser ? '#2c2c2c' : '#e0e0e0' }} src={profile.avatar}>
               {profile.name ? profile.name[0].toUpperCase() : <User />}
             </Avatar>
@@ -166,7 +160,7 @@ export function Profile() {
             )}
           </div>
 
-          <div className="space-y-5 relative"> {/* 加大输入框间距 */}
+          <div className="space-y-5 relative"> 
             {!currentUser && (
               <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1.5px] flex items-center justify-center rounded cursor-pointer" onClick={handleLogin}>
                 <span className="bg-black text-white text-xs px-4 py-2 rounded-full shadow-lg transition hover:scale-105">点击登录后解锁数据修改</span>
