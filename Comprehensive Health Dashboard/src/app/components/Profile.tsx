@@ -5,52 +5,58 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db, signInWithGoogle } from '../../firebase';
 
+const DEMO_DATA = {
+  name: "演示用户", 
+  age: 28, 
+  gender: 'male', 
+  height: 170, 
+  weight: 75, 
+  targetWeight: 65, 
+  region: 'east', 
+  startDate: new Date().toISOString().split('T')[0]
+};
+
+const REGIONS = {
+  'east': { title: '华东地区', desc: '米面结合·口味偏甜' },
+  'south': { title: '华南地区', desc: '米饭为主·口味清淡' },
+  'north': { title: '华北地区', desc: '面食为主·口味偏咸' }
+};
+
 export function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [user, setUser] = useState<any>(null);
-
-  // 虚拟演示数据 (未登录时展示，提供完美初始体感)
-  const DEMO_DATA = {
-    name: "演示用户", 
-    age: 28, 
-    gender: 'male', 
-    height: 170, 
-    weight: 75, 
-    targetWeight: 65, 
-    region: 'east', 
-    startDate: new Date().toISOString().split('T')[0] // 默认今天
-  };
-
   const [data, setData] = useState(DEMO_DATA);
-
-  const REGIONS = {
-    'east': { title: '华东地区', desc: '米面结合·口味偏甜' },
-    'south': { title: '华南地区', desc: '米饭为主·口味清淡' },
-    'north': { title: '华北地区', desc: '面食为主·口味偏咸' }
-  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       if (authUser) {
         setUser(authUser);
-        const snap = await getDoc(doc(db, 'users', authUser.uid));
-        if (snap.exists()) {
-          setData(snap.data() as any);
-        } else {
-          // 新用户首次登录，保留当前演示面板上的数值作为初始档案
-          setData({ ...data, name: authUser.displayName || "新用户" });
+        try {
+          const snap = await getDoc(doc(db, 'users', authUser.uid));
+          if (snap.exists()) {
+            setData(snap.data() as any);
+          } else {
+            // 修复点：使用 prev 函数式更新，完美绕过 Vercel 严格模式的编译拦截
+            setData(prev => ({ ...prev, name: authUser.displayName || "新用户" }));
+          }
+        } catch (e) {
+          console.error("数据同步异常", e);
         }
       } else {
         setUser(null);
-        setData(DEMO_DATA); // 退出后无缝切回演示状态
+        setData(DEMO_DATA);
       }
     });
     return () => unsubscribe();
   }, []);
 
-  const handleEditTrigger = () => {
+  const handleEditTrigger = async () => {
     if (!user) {
-      signInWithGoogle().catch(() => alert("登录授权失败，请检查网络或后台配置"));
+      try {
+        await signInWithGoogle();
+      } catch (error) {
+        alert("登录授权失败，请稍后重试");
+      }
       return;
     }
     setIsEditing(true);
@@ -63,14 +69,11 @@ export function Profile() {
     }
   };
 
-  // 计算坚持天数和目标差值
   const weightDiff = Math.max(0, data.weight - data.targetWeight).toFixed(1);
   const diffDays = Math.max(0, Math.floor((new Date().getTime() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
     <div className="p-4 pb-24 bg-[#fafaf9] min-h-screen space-y-4">
-      
-      {/* 顶部栏：标题与无缝登录/退出按钮 */}
       <div className="flex justify-between items-center px-1 mb-2">
         <h1 className="text-xl font-serif text-[#2c2c2c] tracking-widest">个人档案</h1>
         {user ? (
@@ -84,7 +87,6 @@ export function Profile() {
         )}
       </div>
 
-      {/* 卡片 1：减重目标 (精准还原图3横线排版) */}
       <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
         <CardContent className="p-6 text-center">
           <p className="text-xs text-gray-400 mb-6 tracking-widest">减重目标</p>
@@ -107,7 +109,6 @@ export function Profile() {
         </CardContent>
       </Card>
 
-      {/* 卡片 2：地区饮食 */}
       <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
         <CardContent className="p-4 flex items-start gap-3">
           <MapPin size={18} className="text-gray-400 mt-0.5" />
@@ -119,7 +120,6 @@ export function Profile() {
         </CardContent>
       </Card>
 
-      {/* 卡片 3：开始日期 */}
       <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
         <CardContent className="p-4">
           <div className="flex items-start gap-3 mb-4">
@@ -135,7 +135,6 @@ export function Profile() {
         </CardContent>
       </Card>
 
-      {/* 卡片 4：个人信息 (完全重构表单排版) */}
       <Card sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid #f0f0f0', borderRadius: '12px' }}>
         <CardContent className="p-5">
           <div className="flex justify-between items-center mb-6">
@@ -148,34 +147,21 @@ export function Profile() {
           </div>
 
           <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <TextField fullWidth label="姓名" size="small" disabled={!isEditing} value={data.name} onChange={(e) => setData({...data, name: e.target.value})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField fullWidth label="年龄" type="number" size="small" disabled={!isEditing} value={data.age} onChange={(e) => setData({...data, age: Number(e.target.value)})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} />
-            </Grid>
+            <Grid item xs={12}><TextField fullWidth label="姓名" size="small" disabled={!isEditing} value={data.name} onChange={(e) => setData({...data, name: e.target.value})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} /></Grid>
+            <Grid item xs={6}><TextField fullWidth label="年龄" type="number" size="small" disabled={!isEditing} value={data.age} onChange={(e) => setData({...data, age: Number(e.target.value)})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} /></Grid>
             <Grid item xs={6}>
               <TextField select fullWidth label="性别" size="small" disabled={!isEditing} value={data.gender} onChange={(e) => setData({...data, gender: e.target.value})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }}>
                 <MenuItem value="male">男</MenuItem>
                 <MenuItem value="female">女</MenuItem>
               </TextField>
             </Grid>
-            <Grid item xs={6}>
-              <TextField fullWidth label="身高(cm)" type="number" size="small" disabled={!isEditing} value={data.height} onChange={(e) => setData({...data, height: Number(e.target.value)})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField fullWidth label="当前体重(kg)" type="number" size="small" disabled={!isEditing} value={data.weight} onChange={(e) => setData({...data, weight: Number(e.target.value)})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} />
-            </Grid>
+            <Grid item xs={6}><TextField fullWidth label="身高(cm)" type="number" size="small" disabled={!isEditing} value={data.height} onChange={(e) => setData({...data, height: Number(e.target.value)})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} /></Grid>
+            <Grid item xs={6}><TextField fullWidth label="当前体重(kg)" type="number" size="small" disabled={!isEditing} value={data.weight} onChange={(e) => setData({...data, weight: Number(e.target.value)})} InputProps={{ sx: { fontSize: '14px' } }} InputLabelProps={{ sx: { fontSize: '13px' } }} /></Grid>
             
-            {/* 编辑模式下展示额外设置与保存按钮 */}
             {isEditing && (
               <>
-                <Grid item xs={6}>
-                  <TextField fullWidth label="目标体重(kg)" type="number" size="small" value={data.targetWeight} onChange={(e) => setData({...data, targetWeight: Number(e.target.value)})} />
-                </Grid>
-                <Grid item xs={6}>
-                  <TextField type="date" fullWidth label="起始日期" size="small" value={data.startDate} onChange={(e) => setData({...data, startDate: e.target.value})} InputLabelProps={{ shrink: true }} />
-                </Grid>
+                <Grid item xs={6}><TextField fullWidth label="目标体重(kg)" type="number" size="small" value={data.targetWeight} onChange={(e) => setData({...data, targetWeight: Number(e.target.value)})} /></Grid>
+                <Grid item xs={6}><TextField type="date" fullWidth label="起始日期" size="small" value={data.startDate} onChange={(e) => setData({...data, startDate: e.target.value})} InputLabelProps={{ shrink: true }} /></Grid>
                 <Grid item xs={12}>
                   <TextField select fullWidth label="地区饮食" size="small" value={data.region} onChange={(e) => setData({...data, region: e.target.value})}>
                     {Object.entries(REGIONS).map(([key, val]) => (
