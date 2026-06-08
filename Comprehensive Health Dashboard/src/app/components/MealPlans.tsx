@@ -1,366 +1,204 @@
-import { useState } from 'react';
-import { Card, CardContent, Button, Tabs, Tab, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { Camera, BookOpen, Lightbulb, ChefHat, Apple, Beef, Wheat, Droplets } from 'lucide-react';
-
-interface MealPlan {
-  type: 'low' | 'medium' | 'high' | 'recovery';
-  label: string;
-  color: string;
-  meals: {
-    breakfast: { name: string; carbs: number; protein: number; fat: number; calories: number; };
-    lunch: { name: string; carbs: number; protein: number; fat: number; calories: number; };
-    dinner: { name: string; carbs: number; protein: number; fat: number; calories: number; };
-    snacks: { name: string; carbs: number; protein: number; fat: number; calories: number; };
-  };
-  philosophy: string;
-  benefits: string[];
-  tips: string[];
-}
-
-const MEAL_PLANS: MealPlan[] = [
-  {
-    type: 'low',
-    label: '低碳日',
-    color: 'text-blue-600',
-    meals: {
-      breakfast: { name: '煎蛋配牛油果', carbs: 15, protein: 25, fat: 18, calories: 320 },
-      lunch: { name: '烤鸡胸肉沙拉', carbs: 20, protein: 35, fat: 12, calories: 340 },
-      dinner: { name: '清蒸鱼配西兰花', carbs: 10, protein: 30, fat: 10, calories: 260 },
-      snacks: { name: '坚果一小把', carbs: 8, protein: 6, fat: 14, calories: 180 },
-    },
-    philosophy: '低碳日的核心理念是通过限制碳水化合物摄入，促使身体进入脂肪燃烧模式。这一天我们将碳水控制在50-100g之间，同时保证充足的蛋白质摄入来维持肌肉量。',
-    benefits: [
-      '促进脂肪分解和利用',
-      '提高胰岛素敏感性',
-      '加速脂肪代谢',
-      '保持肌肉量不流失',
-    ],
-    tips: [
-      '多喝水，帮助代谢',
-      '选择优质蛋白质来源',
-      '增加绿色蔬菜摄入',
-      '避免加工食品和糖分',
-    ],
-  },
-  {
-    type: 'medium',
-    label: '中碳日',
-    color: 'text-green-600',
-    meals: {
-      breakfast: { name: '燕麦粥配水果', carbs: 45, protein: 15, fat: 8, calories: 320 },
-      lunch: { name: '糙米饭配鸡肉', carbs: 50, protein: 30, fat: 10, calories: 420 },
-      dinner: { name: '全麦意面配虾仁', carbs: 40, protein: 25, fat: 12, calories: 380 },
-      snacks: { name: '希腊酸奶', carbs: 15, protein: 10, fat: 5, calories: 150 },
-    },
-    philosophy: '中碳日是一个过渡阶段，适度增加碳水化合物（100-150g）为身体补充能量，同时继续保持脂肪燃烧状态。这样的设计能让代谢保持活跃，避免身体适应低碳状态。',
-    benefits: [
-      '补充肝糖储备',
-      '维持代谢率',
-      '提供训练能量',
-      '平衡激素水平',
-    ],
-    tips: [
-      '选择复杂碳水化合物',
-      '避免精制糖和白面',
-      '碳水集中在训练前后',
-      '保持蛋白质摄入稳定',
-    ],
-  },
-  {
-    type: 'high',
-    label: '高碳日',
-    color: 'text-orange-600',
-    meals: {
-      breakfast: { name: '全麦面包配鸡蛋', carbs: 60, protein: 20, fat: 10, calories: 420 },
-      lunch: { name: '米饭配瘦肉蔬菜', carbs: 80, protein: 30, fat: 8, calories: 520 },
-      dinner: { name: '红薯配鸡胸肉', carbs: 70, protein: 35, fat: 6, calories: 480 },
-      snacks: { name: '香蕉配花生酱', carbs: 35, protein: 8, fat: 10, calories: 260 },
-    },
-    philosophy: '高碳日（200-300g碳水）是为了给身体充分补充糖原，修复肌肉，提升代谢。这一天我们适当降低脂肪摄入，让碳水化合物成为主要能量来源，同时刺激瘦素分泌，防止代谢下降。',
-    benefits: [
-      '充分恢复肌糖原',
-      '刺激瘦素分泌',
-      '提升代谢率',
-      '改善训练表现',
-      '心理满足感',
-    ],
-    tips: [
-      '优先选择天然碳水',
-      '配合力量训练',
-      '降低脂肪摄入',
-      '保持蛋白质适中',
-    ],
-  },
-  {
-    type: 'recovery',
-    label: '恢复日',
-    color: 'text-purple-600',
-    meals: {
-      breakfast: { name: '自由选择', carbs: 50, protein: 20, fat: 15, calories: 420 },
-      lunch: { name: '自由选择', carbs: 60, protein: 25, fat: 18, calories: 520 },
-      dinner: { name: '自由选择', carbs: 55, protein: 28, fat: 16, calories: 480 },
-      snacks: { name: '自由选择', carbs: 30, protein: 10, fat: 12, calories: 260 },
-    },
-    philosophy: '恢复日是碳循环中的"自由日"，允许更灵活的饮食选择。这一阶段的设计基于心理学和行为学原理，通过适度放松饮食限制，提高长期坚持的可能性，避免过度节食导致的心理压力和反弹。',
-    benefits: [
-      '心理压力释放',
-      '社交生活平衡',
-      '代谢灵活性',
-      '长期可持续性',
-    ],
-    tips: [
-      '享受美食但适度',
-      '保持正念饮食',
-      '不要过度补偿',
-      '记录身体反应',
-    ],
-  },
-];
+import { useState, useEffect } from 'react';
+import { Card, CardContent, Button, Tabs, Tab } from '@mui/material';
+import { Camera, Wheat, Beef, Droplet, Flame, Info, Utensils } from 'lucide-react';
 
 export function MealPlans() {
-  const [activeTab, setActiveTab] = useState(0);
-  const [showPhotoAnalysis, setShowPhotoAnalysis] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState(0); // 0:低碳, 1:中碳, 2:高碳, 3:恢复
+  const [todayTypeIndex, setTodayTypeIndex] = useState(0);
 
-  const currentPlan = MEAL_PLANS[activeTab];
+  // 营养学数据状态
+  const [macros, setMacros] = useState({ calories: 0, carbs: 0, protein: 0, fat: 0 });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      const parsed = JSON.parse(savedProfile);
+      setProfile(parsed);
+
+      // 1. 测算今天是循环的哪一天
+      const start = new Date(parsed.startDate);
+      start.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffDays = Math.max(0, Math.floor((today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      
+      // 循环逻辑: 0=高碳, 1=中碳, 2=低碳
+      const currentCycle = diffDays % 3; 
+      // 映射到 Tab 的 Index (我们设计 Tab 顺序为: 低碳0, 中碳1, 高碳2)
+      const tabIndexMap = currentCycle === 0 ? 2 : (currentCycle === 1 ? 1 : 0);
+      
+      setTodayTypeIndex(tabIndexMap);
+      setActiveTab(tabIndexMap); // 默认选中今天
+      
+      // 2. 初始计算营养素
+      calculateMacros(parsed, tabIndexMap);
     }
+  }, []);
+
+  // 核心医学/营养学计算引擎 (BMR + TDEE)
+  const calculateMacros = (user: any, tabIndex: number) => {
+    // Mifflin-St Jeor 公式计算基础代谢 (BMR)
+    let bmr = 10 * user.weight + 6.25 * user.height - 5 * user.age;
+    bmr += user.gender === 'female' ? -161 : 5;
+
+    // 估算日常总消耗 (TDEE) - 假设处于减脂期的中等活动量
+    const tdee = bmr * 1.375;
+
+    let targetCalories = 0;
+    let carbsRatio = 0, proteinRatio = 0, fatRatio = 0;
+
+    // 根据碳水循环阶段，动态分配热量缺口和宏量营养素比例
+    if (tabIndex === 0) { // 低碳日
+      targetCalories = tdee - 500; // 制造较大缺口
+      carbsRatio = 0.15; proteinRatio = 0.45; fatRatio = 0.40;
+    } else if (tabIndex === 1) { // 中碳日
+      targetCalories = tdee - 300; // 平稳缺口
+      carbsRatio = 0.35; proteinRatio = 0.40; fatRatio = 0.25;
+    } else if (tabIndex === 2) { // 高碳日
+      targetCalories = tdee; // 不制造缺口，补充糖原
+      carbsRatio = 0.50; proteinRatio = 0.30; fatRatio = 0.20;
+    }
+
+    // 换算成具体的克数 (碳水4kcal/g, 蛋白4kcal/g, 脂肪9kcal/g)
+    setMacros({
+      calories: Math.round(targetCalories),
+      carbs: Math.round((targetCalories * carbsRatio) / 4),
+      protein: Math.round((targetCalories * proteinRatio) / 4),
+      fat: Math.round((targetCalories * fatRatio) / 9),
+    });
   };
 
-  const totalNutrition = {
-    carbs: currentPlan.meals.breakfast.carbs + currentPlan.meals.lunch.carbs + currentPlan.meals.dinner.carbs + currentPlan.meals.snacks.carbs,
-    protein: currentPlan.meals.breakfast.protein + currentPlan.meals.lunch.protein + currentPlan.meals.dinner.protein + currentPlan.meals.snacks.protein,
-    fat: currentPlan.meals.breakfast.fat + currentPlan.meals.lunch.fat + currentPlan.meals.dinner.fat + currentPlan.meals.snacks.fat,
-    calories: currentPlan.meals.breakfast.calories + currentPlan.meals.lunch.calories + currentPlan.meals.dinner.calories + currentPlan.meals.snacks.calories,
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    if (profile) calculateMacros(profile, newValue);
   };
+
+  if (!profile) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-[#fafaf9] text-[#757575]">
+        <p className="text-sm tracking-widest">请先前往「我的」完成登录与基础配置</p>
+      </div>
+    );
+  }
+
+  // 动态食谱与科普文案库
+  const planDetails = [
+    {
+      type: '低碳日',
+      why: '低碳日的核心理念是通过严格限制碳水化合物摄入（<50g），耗尽肝脏和肌肉中的糖原储备，迫使身体切换能量代谢模式，将顽固脂肪转化为酮体供能。今天请务必保证优质脂肪摄入以维持激素水平。',
+      meals: [
+        { name: '早餐：黑咖啡 + 菠菜煎双蛋配半个牛油果', cal: 320, c: 5, p: 18, f: 25 },
+        { name: '午餐：香煎三文鱼排 + 蒜香西兰花 + 橄榄油沙拉', cal: 450, c: 12, p: 35, f: 28 },
+        { name: '晚餐：清蒸海鲈鱼 + 炒青菜（控制烹饪油用量）', cal: 300, c: 8, p: 32, f: 15 }
+      ]
+    },
+    {
+      type: '中碳日',
+      why: '中碳日是身体的平稳过渡期。适量的碳水（主要来自低GI粗粮）能维持中枢神经系统的活跃度，防止代谢受损和肌肉流失。今天是进行抗阻力训练（如举铁）的绝佳时机。',
+      meals: [
+        { name: '早餐：全麦面包1片 + 鸡胸肉片 + 无糖豆浆', cal: 350, c: 30, p: 25, f: 10 },
+        { name: '午餐：藜麦饭（半碗） + 青椒炒牛肉 + 凉拌黄瓜', cal: 500, c: 45, p: 38, f: 18 },
+        { name: '晚餐：虾仁蒸蛋 + 蒜蓉油麦菜', cal: 280, c: 10, p: 28, f: 12 }
+      ]
+    },
+    {
+      type: '高碳日',
+      why: '高碳日（欺骗日）的医学意义在于：通过大量复合碳水的摄入，刺激瘦素（Leptin）分泌，恢复甲状腺激素 T3 水平，重新点燃下降的基础代谢率。今天适合安排大重量下肢训练，让碳水全部进入肌肉而非脂肪细胞。',
+      meals: [
+        { name: '早餐：燕麦粥（大份） + 香蕉1根 + 蛋白2个', cal: 420, c: 65, p: 15, f: 5 },
+        { name: '午餐：紫薯/红薯 + 照烧鸡腿肉（去皮） + 炒菠菜', cal: 600, c: 75, p: 40, f: 15 },
+        { name: '晚餐：意面（番茄肉酱） + 蔬果沙拉', cal: 550, c: 60, p: 25, f: 12 }
+      ]
+    }
+  ];
+
+  const currentPlan = planDetails[activeTab];
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
-      {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">饮食食谱</h1>
-        <p className="text-sm text-gray-500 mt-1">科学饮食，健康减脂</p>
+    <div className="h-full overflow-y-auto bg-[#fafaf9] p-6 space-y-5 pb-20">
+      
+      {/* 顶部 AI 拍照互动区 */}
+      <Card sx={{ bgcolor: '#ffffff', border: '0.5px solid #e7e5e4', boxShadow: 'none' }}>
+        <CardContent className="p-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-[#2c2c2c] flex items-center gap-1"><Camera size={16}/> 拍照解析</h3>
+            <p className="text-xs text-gray-400 mt-1">上传食物照片，AI 为你分析营养成分</p>
+          </div>
+          <Button variant="outlined" size="small" sx={{ borderColor: '#e7e5e4', color: '#2c2c2c' }} startIcon={<Camera size={14} />}>拍照</Button>
+        </CardContent>
+      </Card>
+
+      {/* 碳水循环选择器 */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" TabIndicatorProps={{ style: { backgroundColor: '#2c2c2c' } }}>
+          <Tab label="低碳日" sx={{ fontSize: '13px', color: activeTab === 0 ? '#2c2c2c' : '#9e9e9e', fontWeight: activeTab === 0 ? 'bold' : 'normal' }} />
+          <Tab label="中碳日" sx={{ fontSize: '13px', color: activeTab === 1 ? '#2c2c2c' : '#9e9e9e', fontWeight: activeTab === 1 ? 'bold' : 'normal' }} />
+          <Tab label="高碳日" sx={{ fontSize: '13px', color: activeTab === 2 ? '#2c2c2c' : '#9e9e9e', fontWeight: activeTab === 2 ? 'bold' : 'normal' }} />
+        </Tabs>
       </div>
 
-      {/* Photo Analysis Button */}
-      <Card className="shadow-sm bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+      {/* 专属计算出的每日营养总计 */}
+      <Card sx={{ bgcolor: '#ffffff', border: '0.5px solid #e7e5e4', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+        <CardContent className="p-5">
+          <p className="text-xs text-[#757575] mb-4">为您量身定制的今日营养指标</p>
+          <div className="grid grid-cols-4 divide-x divide-gray-100 text-center">
             <div>
-              <p className="font-bold mb-1">📸 拍照解析</p>
-              <p className="text-xs opacity-90">上传食物照片，AI 为你分析营养成分</p>
+              <Wheat size={18} className="mx-auto text-amber-600 mb-2" />
+              <p className="text-lg font-bold text-[#2c2c2c]">{macros.carbs}g</p>
+              <p className="text-[10px] text-gray-400">碳水</p>
             </div>
-            <Button
-              variant="contained"
-              startIcon={<Camera />}
-              onClick={() => setShowPhotoAnalysis(true)}
-              sx={{ bgcolor: 'white', color: '#3b82f6', '&:hover': { bgcolor: '#f3f4f6' } }}
-            >
-              拍照
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs */}
-      <Card className="shadow-sm">
-        <Tabs
-          value={activeTab}
-          onChange={(_, value) => setActiveTab(value)}
-          variant="fullWidth"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          {MEAL_PLANS.map((plan, index) => (
-            <Tab key={index} label={plan.label} />
-          ))}
-        </Tabs>
-      </Card>
-
-      {/* Daily Nutrition Summary */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <p className="text-sm font-medium text-gray-700 mb-3">每日营养总计</p>
-          <div className="grid grid-cols-4 gap-3">
-            <div className="text-center">
-              <Wheat className="text-orange-500 mx-auto mb-1" size={24} />
-              <p className="text-lg font-bold text-gray-900">{totalNutrition.carbs}g</p>
-              <p className="text-xs text-gray-500">碳水</p>
+            <div>
+              <Beef size={18} className="mx-auto text-rose-500 mb-2" />
+              <p className="text-lg font-bold text-[#2c2c2c]">{macros.protein}g</p>
+              <p className="text-[10px] text-gray-400">蛋白质</p>
             </div>
-            <div className="text-center">
-              <Beef className="text-red-500 mx-auto mb-1" size={24} />
-              <p className="text-lg font-bold text-gray-900">{totalNutrition.protein}g</p>
-              <p className="text-xs text-gray-500">蛋白质</p>
+            <div>
+              <Droplet size={18} className="mx-auto text-yellow-500 mb-2" />
+              <p className="text-lg font-bold text-[#2c2c2c]">{macros.fat}g</p>
+              <p className="text-[10px] text-gray-400">脂肪</p>
             </div>
-            <div className="text-center">
-              <Droplets className="text-yellow-500 mx-auto mb-1" size={24} />
-              <p className="text-lg font-bold text-gray-900">{totalNutrition.fat}g</p>
-              <p className="text-xs text-gray-500">脂肪</p>
-            </div>
-            <div className="text-center">
-              <Lightbulb className="text-blue-500 mx-auto mb-1" size={24} />
-              <p className="text-lg font-bold text-gray-900">{totalNutrition.calories}</p>
-              <p className="text-xs text-gray-500">卡路里</p>
+            <div>
+              <Flame size={18} className="mx-auto text-blue-500 mb-2" />
+              <p className="text-lg font-bold text-[#2c2c2c]">{macros.calories}</p>
+              <p className="text-[10px] text-gray-400">卡路里</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Philosophy */}
-      <Card className="shadow-sm">
+      {/* 营养学科普说明 */}
+      <Card sx={{ bgcolor: '#fafaf9', border: '1px solid #e7e5e4', boxShadow: 'none' }}>
         <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <BookOpen size={18} className={currentPlan.color} />
-            <p className="text-sm font-medium text-gray-700">为什么这样吃？</p>
-          </div>
-          <p className="text-sm text-gray-600 leading-relaxed">{currentPlan.philosophy}</p>
+          <h3 className="text-sm font-bold text-[#2c2c2c] flex items-center gap-2 mb-2"><Info size={16} className="text-blue-500"/> 为什么这样吃？</h3>
+          <p className="text-xs text-gray-600 leading-relaxed text-justify">{currentPlan.why}</p>
         </CardContent>
       </Card>
 
-      {/* Meals */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ChefHat size={18} className={currentPlan.color} />
-            <p className="text-sm font-medium text-gray-700">今日推荐食谱</p>
+      {/* 智能生成的一日三餐 */}
+      <Card sx={{ bgcolor: '#ffffff', border: '0.5px solid #e7e5e4', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+        <CardContent className="p-0">
+          <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+            <Utensils size={16} className="text-orange-500" />
+            <h3 className="text-sm font-bold text-[#2c2c2c]">今日智能推荐食谱</h3>
           </div>
-          <div className="space-y-3">
-            {Object.entries(currentPlan.meals).map(([mealType, meal]) => (
-              <div key={mealType} className="p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-medium text-gray-900">
-                    {mealType === 'breakfast' && '早餐'}
-                    {mealType === 'lunch' && '午餐'}
-                    {mealType === 'dinner' && '晚餐'}
-                    {mealType === 'snacks' && '加餐'}
-                  </p>
-                  <p className="text-sm text-gray-500">{meal.calories} 卡</p>
+          <div className="divide-y divide-gray-100">
+            {currentPlan.meals.map((meal, index) => (
+              <div key={index} className="p-4 hover:bg-gray-50 transition">
+                <div className="flex justify-between items-start mb-2">
+                  <p className="text-sm font-medium text-[#2c2c2c] w-3/4">{meal.name}</p>
+                  <p className="text-xs font-bold text-gray-500">{meal.cal} kcal</p>
                 </div>
-                <p className="text-sm text-gray-700 mb-2">{meal.name}</p>
-                <div className="flex gap-4 text-xs text-gray-500">
-                  <span>碳水 {meal.carbs}g</span>
-                  <span>蛋白 {meal.protein}g</span>
-                  <span>脂肪 {meal.fat}g</span>
+                <div className="flex gap-4 text-[11px] text-gray-400">
+                  <span>碳水 {meal.c}g</span>
+                  <span>蛋白 {meal.p}g</span>
+                  <span>脂肪 {meal.f}g</span>
                 </div>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
-
-      {/* Benefits */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Apple size={18} className={currentPlan.color} />
-            <p className="text-sm font-medium text-gray-700">好处是什么？</p>
-          </div>
-          <div className="space-y-2">
-            {currentPlan.benefits.map((benefit, index) => (
-              <div key={index} className="flex items-start gap-2">
-                <span className="text-green-500 mt-0.5">✓</span>
-                <p className="text-sm text-gray-600">{benefit}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tips */}
-      <Card className="shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Lightbulb size={18} className={currentPlan.color} />
-            <p className="text-sm font-medium text-gray-700">实用建议</p>
-          </div>
-          <div className="space-y-2">
-            {currentPlan.tips.map((tip, index) => (
-              <div key={index} className="flex items-start gap-2">
-                <span className="text-blue-500">💡</span>
-                <p className="text-sm text-gray-600">{tip}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Photo Analysis Dialog */}
-      <Dialog open={showPhotoAnalysis} onClose={() => setShowPhotoAnalysis(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>拍照解析食物</DialogTitle>
-        <DialogContent>
-          <div className="space-y-4 pt-2">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              {uploadedImage ? (
-                <img src={uploadedImage} alt="Uploaded food" className="max-w-full h-auto mx-auto rounded" />
-              ) : (
-                <div>
-                  <Camera size={48} className="text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-2">上传食物照片</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="food-upload"
-                  />
-                  <label htmlFor="food-upload">
-                    <Button component="span" variant="outlined">
-                      选择照片
-                    </Button>
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {uploadedImage && (
-              <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-                <p className="text-sm font-medium text-gray-900">AI 分析结果：</p>
-                <div className="space-y-2 text-sm">
-                  <p className="text-gray-700">📊 <strong>识别食物：</strong>烤鸡胸肉配蔬菜沙拉</p>
-                  <p className="text-gray-700">🔢 <strong>估算营养：</strong></p>
-                  <div className="ml-4 space-y-1 text-xs text-gray-600">
-                    <p>• 热量: 约 380 卡路里</p>
-                    <p>• 蛋白质: 35g</p>
-                    <p>• 碳水化合物: 18g</p>
-                    <p>• 脂肪: 12g</p>
-                  </div>
-                  <p className="text-gray-700">💡 <strong>建议：</strong></p>
-                  <div className="ml-4 space-y-1 text-xs text-gray-600">
-                    <p>• 适合低碳日或中碳日食用</p>
-                    <p>• 蛋白质含量充足，有助于肌肉恢复</p>
-                    <p>• 建议搭配一小份糙米饭增加饱腹感</p>
-                    <p>• 可以增加健康脂肪如橄榄油拌菜</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
-            setShowPhotoAnalysis(false);
-            setUploadedImage(null);
-          }}>
-            关闭
-          </Button>
-          {uploadedImage && (
-            <Button variant="contained" onClick={() => {
-              // Save to meal log
-              setShowPhotoAnalysis(false);
-              setUploadedImage(null);
-            }}>
-              保存记录
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
     </div>
   );
 }
