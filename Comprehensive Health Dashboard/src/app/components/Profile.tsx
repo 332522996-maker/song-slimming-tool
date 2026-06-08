@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, TextField, Button, MenuItem, Avatar } from '@mui/material';
 import { User, Edit3 } from 'lucide-react';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { db, signInWithGoogle } from '../../firebase'; 
 
 export interface UserProfile {
   name: string;
@@ -40,54 +37,54 @@ export function Profile() {
   const [profile, setProfile] = useState<UserProfile>(DEMO_DATA);
   const [isEditing, setIsEditing] = useState(false);
   const [tempProfile, setTempProfile] = useState<UserProfile>(DEMO_DATA);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setCurrentUser(user);
-        const userRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(userRef);
-        
-        if (docSnap.exists()) {
-          const cloudData = docSnap.data() as UserProfile;
-          setProfile(cloudData);
-          setTempProfile(cloudData);
-          localStorage.setItem('userProfile', JSON.stringify(cloudData));
-        } else {
-          const initData = { ...DEMO_DATA, name: user.displayName || '新用户', avatar: user.photoURL || '' };
-          setProfile(initData);
-          setTempProfile(initData);
-        }
+    const checkLogin = localStorage.getItem('isLoggedIn') === 'true';
+    if (checkLogin) {
+      setIsLoggedIn(true);
+      const savedData = localStorage.getItem('userProfile');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        setProfile(parsed);
+        setTempProfile(parsed);
       } else {
-        setCurrentUser(null);
-        setProfile(DEMO_DATA);
-        setTempProfile(DEMO_DATA);
-        localStorage.removeItem('userProfile');
+        const initData = { ...DEMO_DATA, name: '李桂林', weight: 80.6, targetWeight: 75 };
+        setProfile(initData);
+        setTempProfile(initData);
       }
-    });
-    return () => unsubscribe();
+    } else {
+      setIsLoggedIn(false);
+      setProfile(DEMO_DATA);
+      setTempProfile(DEMO_DATA);
+    }
   }, []);
 
-  const handleLogin = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (error) {
-      alert("登录遇到问题，请重试");
+  const handleLogin = () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    setIsLoggedIn(true);
+    const savedData = localStorage.getItem('userProfile');
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      setProfile(parsed);
+      setTempProfile(parsed);
+    } else {
+      const initData = { ...DEMO_DATA, name: '李桂林', weight: 80.6, targetWeight: 75 };
+      setProfile(initData);
+      setTempProfile(initData);
+      localStorage.setItem('userProfile', JSON.stringify(initData));
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(getAuth());
-    } catch (error) {
-      console.error("退出失败", error);
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    setIsLoggedIn(false);
+    setProfile(DEMO_DATA);
+    setTempProfile(DEMO_DATA);
   };
 
   const handleEditClick = () => {
-    if (!currentUser) {
+    if (!isLoggedIn) {
       alert("请先点击上方按钮登录，以创建专属您的健康档案");
       handleLogin();
       return;
@@ -95,18 +92,11 @@ export function Profile() {
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
-    if (!currentUser) return;
+  const handleSave = () => {
+    if (!isLoggedIn) return;
     setProfile(tempProfile);
     localStorage.setItem('userProfile', JSON.stringify(tempProfile)); 
     setIsEditing(false);
-
-    try {
-      const userRef = doc(db, 'users', currentUser.uid);
-      await setDoc(userRef, { ...tempProfile }, { merge: true });
-    } catch (error) {
-      console.error("数据云端同步失败", error);
-    }
   };
 
   const bmi = (profile.weight / ((profile.height / 100) ** 2)).toFixed(1);
@@ -118,13 +108,13 @@ export function Profile() {
       <h1 className="text-2xl font-serif text-center text-[#2c2c2c] tracking-widest mb-6">个人档案</h1>
 
       <div className="mb-4">
-        {currentUser ? (
+        {isLoggedIn ? (
           <Button onClick={handleLogout} fullWidth variant="outlined" color="error" sx={{ borderColor: '#e7e5e4', color: '#757575' }}>
             退出登录
           </Button>
         ) : (
           <Button onClick={handleLogin} fullWidth variant="contained" sx={{ bgcolor: '#2c2c2c', '&:hover': { bgcolor: '#000' } }}>
-            使用 Google 账号登录
+            模拟账号登录 (开发模式)
           </Button>
         )}
       </div>
@@ -132,7 +122,7 @@ export function Profile() {
       <Card sx={{ bgcolor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '0.5px solid #e7e5e4' }}>
         <CardContent className="p-6">
           <div className="flex items-center gap-4 mb-6"> 
-            <Avatar sx={{ width: 64, height: 64, border: '1px solid #e7e5e4', bgcolor: currentUser ? '#2c2c2c' : '#e0e0e0' }} src={profile.avatar}>
+            <Avatar sx={{ width: 64, height: 64, border: '1px solid #e7e5e4', bgcolor: isLoggedIn ? '#2c2c2c' : '#e0e0e0' }} src={profile.avatar}>
               {profile.name ? profile.name[0].toUpperCase() : <User />}
             </Avatar>
             <div>
@@ -161,7 +151,7 @@ export function Profile() {
           </div>
 
           <div className="space-y-5 relative"> 
-            {!currentUser && (
+            {!isLoggedIn && (
               <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1.5px] flex items-center justify-center rounded cursor-pointer" onClick={handleLogin}>
                 <span className="bg-black text-white text-xs px-4 py-2 rounded-full shadow-lg transition hover:scale-105">点击登录后解锁数据修改</span>
               </div>
@@ -178,7 +168,7 @@ export function Profile() {
               {REGIONS.map(r => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
             </TextField>
 
-            {isEditing && currentUser && (
+            {isEditing && isLoggedIn && (
               <div className="flex gap-3 mt-6 pt-2">
                 <Button onClick={handleSave} variant="contained" fullWidth sx={{ bgcolor: '#2c2c2c', py: 1, '&:hover': { bgcolor: '#000' } }}>保存设置</Button>
                 <Button onClick={() => setIsEditing(false)} variant="outlined" fullWidth sx={{ color: '#757575', borderColor: '#e7e5e4', py: 1 }}>取消</Button>
