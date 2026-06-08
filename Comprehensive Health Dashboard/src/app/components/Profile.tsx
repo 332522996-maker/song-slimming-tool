@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, TextField, Button, MenuItem, Avatar } from '@mui/material';
 import { User, Edit3 } from 'lucide-react';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { db, signInWithGoogle } from '../../firebase';
 
 // 核心数据接口
 export interface UserProfile {
@@ -25,16 +22,16 @@ const REGIONS = [
   { value: 'north', label: '华北地区 (面食为主·口味偏咸)' },
 ];
 
-// 精心设计的虚拟演示数据（默认采用标准的三天碳水循环模型）
+// 虚拟演示数据
 const DEMO_DATA: UserProfile = {
-  name: "演示模式 (请登录)",
+  name: "演示模式 (未登录)",
   age: 30,
   gender: 'male',
   height: 175,
   weight: 75,
   targetWeight: 68,
   region: 'east',
-  startDate: new Date().toISOString().split('T')[0], // 默认今天开始
+  startDate: new Date().toISOString().split('T')[0], 
   trainingIntensity: 'medium',
 };
 
@@ -42,68 +39,72 @@ export function Profile() {
   const [profile, setProfile] = useState<UserProfile>(DEMO_DATA);
   const [isEditing, setIsEditing] = useState(false);
   const [tempProfile, setTempProfile] = useState<UserProfile>(DEMO_DATA);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  
+  // 使用简单的状态来判断是否登录
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // 监听登录状态，自动切换数据源
+  // 页面加载时检查本地是否“已登录”
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setCurrentUser(user);
-        const userRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(userRef);
-        
-        if (docSnap.exists()) {
-          const cloudData = docSnap.data() as UserProfile;
-          setProfile(cloudData);
-          setTempProfile(cloudData);
-          // 将真实数据同步到本地，供仪表盘和食谱页读取
-          localStorage.setItem('userProfile', JSON.stringify(cloudData));
-        } else {
-          // 新用户初始化
-          const initData = { ...DEMO_DATA, name: user.displayName || '新用户', startDate: '2026-03-20' };
-          setProfile(initData);
-          setTempProfile(initData);
-        }
+    const checkLogin = localStorage.getItem('isLoggedIn') === 'true';
+    if (checkLogin) {
+      setIsLoggedIn(true);
+      const savedData = localStorage.getItem('userProfile');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        setProfile(parsed);
+        setTempProfile(parsed);
       } else {
-        // 未登录状态，强制显示演示数据
-        setCurrentUser(null);
-        setProfile(DEMO_DATA);
-        setTempProfile(DEMO_DATA);
-        localStorage.setItem('userProfile', JSON.stringify(DEMO_DATA));
+        // 如果没有数据，默认带入你之前的测试数据
+        const initData = { ...DEMO_DATA, name: '李桂林', weight: 80.6, targetWeight: 75 };
+        setProfile(initData);
+        setTempProfile(initData);
       }
-    });
-    return () => unsubscribe();
+    } else {
+      setIsLoggedIn(false);
+      setProfile(DEMO_DATA);
+      setTempProfile(DEMO_DATA);
+    }
   }, []);
 
-  const handleLogin = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (error) {
-      alert("登录失败，请检查网络或配置");
+  // 模拟登录操作
+  const handleLogin = () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    setIsLoggedIn(true);
+    const savedData = localStorage.getItem('userProfile');
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+      setProfile(parsed);
+      setTempProfile(parsed);
+    } else {
+      const initData = { ...DEMO_DATA, name: '李桂林', weight: 80.6, targetWeight: 75 };
+      setProfile(initData);
+      setTempProfile(initData);
+      localStorage.setItem('userProfile', JSON.stringify(initData));
     }
   };
 
+  // 模拟退出操作
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    setIsLoggedIn(false);
+    setProfile(DEMO_DATA);
+    setTempProfile(DEMO_DATA);
+  };
+
   const handleEditClick = () => {
-    if (!currentUser) {
-      alert("请先登录以创建专属您的健康档案");
+    if (!isLoggedIn) {
+      alert("请先点击上方按钮登录，以创建专属您的健康档案");
       handleLogin();
       return;
     }
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
-    if (!currentUser) return;
-    
+  const handleSave = () => {
+    if (!isLoggedIn) return;
     setProfile(tempProfile);
-    localStorage.setItem('userProfile', JSON.stringify(tempProfile)); // 更新全局状态
+    localStorage.setItem('userProfile', JSON.stringify(tempProfile)); 
     setIsEditing(false);
-
-    // 同步到云端
-    const userRef = doc(db, 'users', currentUser.uid);
-    await setDoc(userRef, { ...tempProfile, lastUpdated: new Date().toISOString() }, { merge: true });
-    alert("档案已更新并同步！");
   };
 
   const bmi = (profile.weight / ((profile.height / 100) ** 2)).toFixed(1);
@@ -113,8 +114,8 @@ export function Profile() {
     <div className="h-full overflow-y-auto bg-[#fafaf9] p-6 space-y-4">
       {/* 顶部鉴权区域 */}
       <div className="mb-4">
-        {currentUser ? (
-          <Button onClick={() => signOut(getAuth())} fullWidth variant="outlined" color="error" sx={{ borderColor: '#e7e5e4', color: '#757575' }}>
+        {isLoggedIn ? (
+          <Button onClick={handleLogout} fullWidth variant="outlined" color="error" sx={{ borderColor: '#e7e5e4', color: '#757575' }}>
             退出登录
           </Button>
         ) : (
@@ -128,7 +129,7 @@ export function Profile() {
       <Card sx={{ bgcolor: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '0.5px solid #e7e5e4' }}>
         <CardContent className="p-6">
           <div className="flex items-center gap-4 mb-4">
-            <Avatar sx={{ width: 64, height: 64, border: '1px solid #e7e5e4', bgcolor: currentUser ? '#4caf50' : '#e0e0e0' }} src={profile.avatar}>
+            <Avatar sx={{ width: 64, height: 64, border: '1px solid #e7e5e4', bgcolor: isLoggedIn ? '#2c2c2c' : '#e0e0e0' }} src={profile.avatar}>
               {profile.name ? profile.name[0].toUpperCase() : <User />}
             </Avatar>
             <div>
@@ -159,7 +160,7 @@ export function Profile() {
 
           <div className="space-y-4 relative">
             {/* 未登录时的遮罩提示 */}
-            {!currentUser && (
+            {!isLoggedIn && (
               <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1px] flex items-center justify-center rounded cursor-pointer" onClick={handleLogin}>
                 <span className="bg-black text-white text-xs px-3 py-1.5 rounded-full shadow-lg">点击登录后解锁数据修改</span>
               </div>
@@ -176,7 +177,7 @@ export function Profile() {
               {REGIONS.map(r => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
             </TextField>
 
-            {isEditing && currentUser && (
+            {isEditing && isLoggedIn && (
               <div className="flex gap-2 mt-4">
                 <Button onClick={handleSave} variant="contained" fullWidth sx={{ bgcolor: '#2c2c2c', '&:hover': { bgcolor: '#000' } }}>保存设置</Button>
                 <Button onClick={() => setIsEditing(false)} variant="outlined" fullWidth sx={{ color: '#757575', borderColor: '#e7e5e4' }}>取消</Button>
